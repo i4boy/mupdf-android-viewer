@@ -1,5 +1,6 @@
 package com.artifex.mupdf.viewer;
 
+import com.artifex.mupdf.fitz.Context;
 import com.artifex.mupdf.fitz.Cookie;
 import com.artifex.mupdf.fitz.DisplayList;
 import com.artifex.mupdf.fitz.Document;
@@ -13,7 +14,6 @@ import com.artifex.mupdf.fitz.RectI;
 import com.artifex.mupdf.fitz.SeekableInputStream;
 import com.artifex.mupdf.fitz.android.AndroidDrawDevice;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.PointF;
 import android.util.Log;
@@ -41,6 +41,29 @@ public class MuPDFCore
 	private int layoutEM = 10;
 
 	private MuPDFCore(Document doc) {
+		String userCSS =
+//		"@font-face { " +
+//				"   font-family: 'Source Han Serif CN'; " +
+//				"   font-weight: normal; " +
+//				"   font-style: normal; " +
+//				"} " +
+//				"@font-face { " +
+//				"   font-family: 'Source Han Serif CN'; " +
+//				"   font-weight: bold; " +
+//				"   font-style: normal; " +
+//				"} " +
+				"body, html { " +
+						"   background-color: #FFFF00 !important; " +  // 设置背景色
+						"   font-family: 'Source Han Serif CN' !important; " +
+						"   line-height: 1.6 !important; " +
+						"   text-align: justify !important; " +
+//				"} ";
+//				+
+//				"h1, h2, h3 { " +
+//				"   font-family: 'Source Han Serif CN' !important; " +
+//				"   font-weight: bold !important; " +
+						"}";
+		Context.setUserCSS(userCSS);
 		this.doc = doc;
 		doc.layout(layoutW, layoutH, layoutEM);
 		pageCount = doc.countPages();

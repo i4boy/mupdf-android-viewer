@@ -1,0 +1,150 @@
+apply plugin: 'maven-publish'
+println "Available components: ${components*.name}"
+def isReleaseBuild() {
+    return !VERSION_NAME.contains("SNAPSHOT")
+}
+// 获取仓库url
+def getRepositoryUrl() {
+    return isReleaseBuild() ? RELEASE_REPOSITORY_URL : SNAPSHOT_REPOSITORY_URL
+}
+
+//打包sourceJar任务
+task sourcesJar(type: Jar) {
+    classifier 'sources'
+    from android.sourceSets.main.java.srcDirs
+}
+
+//修改版本名
+def getVersionName(def versionName) {
+    def realVersionName
+    def date = new Date()
+    if (versionName.contains("SNAPSHOT")) {
+        def time = date.format('yyyyMMdd-HHmm')
+        realVersionName = versionName.replace("SNAPSHOT", "") + "ink-" + time + "-SNAPSHOT"
+    } else {
+        realVersionName = versionName
+    }
+    println("getVersionName=====" + realVersionName)
+    return realVersionName
+}
+
+afterEvaluate {
+    Project project ->
+        publishing {
+            publications {
+                release(MavenPublication) {
+                    from components.release
+                    // Standard metadata ：metadata信息，如groupId，version，artifactId
+                    groupId project.ext.GROUP_ID//唯一标识（通常为模块包名)
+                    artifactId project.ext.POM_ARTIFACT_ID// 项目名称（通常为类库模块名称)
+
+                    def name = getVersionName(project.ext.VERSION_NAME)
+                    version name //版本号
+                    //需要更新值
+                    project.ext.VERSION_NAME = name
+                    // 增加 sourcesJar 任务
+                    artifact sourcesJar
+                }
+            }
+
+
+            repositories {
+                //私有仓库
+                maven {
+                    allowInsecureProtocol true
+                    url = getRepositoryUrl()
+                    credentials {
+                        username = NEXUS_USERNAME
+                        password = NEXUS_PASSWORD
+                    }
+                }
+                //本地仓库 默认位置:$USER_HOME/.m2/repository-以及发布的POM文件
+                mavenLocal()
+            }
+
+        }
+        // 2、找到当前 project 下第一个执行的 task，即 preBuild task
+        def publishingTask = project.tasks.getByName("publish")
+        publishingTask.finalizedBy(send)
+}
+dependencies {
+    implementation "com.google.code.gson:gson:2.8.9"
+}
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "com.google.code.gson:gson:2.8.9"
+    }
+}
+
+class ContentModel {
+    String content
+}
+
+import com.google.gson.Gson
+
+class DingTalkTask extends DefaultTask {
+    @TaskAction
+    def sendMsgToDing() {
+        def padPublishURL =
+                "https://oapi.dingtalk.com/robot/send?access_token=0e72613fb682607ff920c156df65e5482204627fb6dce8a1bf434d3c225e29a9"
+        def conn = new URL(padPublishURL).openConnection()
+        conn.setRequestMethod('POST')
+        conn.setRequestProperty("Connection", "Keep-Alive")
+        conn.setRequestProperty("Content-type", "application/json;charset=UTF-8")
+        conn.setConnectTimeout(30000)
+        conn.setReadTimeout(30000)
+        conn.setDoInput(true)
+        conn.setDoOutput(true)
+        def dos = new DataOutputStream(conn.getOutputStream())
+        HashMap<String, Object> map = new HashMap<>()
+        map.put("msgtype", "text")
+        ContentModel contentModel = new ContentModel()
+
+        // Groovy脚本中获取Git全局配置中的账户名
+        def gitName = getGitName()
+        contentModel.content = "publish:${project.ext.GROUP_ID}:${project.ext.POM_ARTIFACT_ID}" +
+                ":${project.ext.VERSION_NAME}" + "\naccount:" + gitName
+        map.put("text", contentModel)
+
+        def json = new Gson().toJson(map)
+        println("====:$json")
+        dos.writeBytes(json)
+        def input = new BufferedReader(new InputStreamReader(conn.getInputStream()))
+        String line
+        String result = ""
+        while ((line = input.readLine()) != null) {
+            result += line
+        }
+        dos.flush()
+        dos.close()
+        input.close()
+        conn.connect()
+        println(result)
+    }
+
+    private String getGitName() {
+        try {
+            def process = Runtime.getRuntime().exec("git config --global user.name")
+            def reader = new BufferedReader(new InputStreamReader(process.getInputStream()))
+            String line
+            while ((line = reader.readLine()) != null) {
+                return line.trim()
+            }
+            process.waitFor()
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace()
+        }
+        return ""
+    }
+
+}
+
+task send(type: DingTalkTask) {
+    doLast {
+        println("doLast=====")
+    }
+}
