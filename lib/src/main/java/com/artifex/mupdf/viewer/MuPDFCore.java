@@ -42,28 +42,54 @@ public class MuPDFCore
 
 	private MuPDFCore(Document doc) {
 		String userCSS =
-//		"@font-face { " +
-//				"   font-family: 'Source Han Serif CN'; " +
-//				"   font-weight: normal; " +
-//				"   font-style: normal; " +
-//				"} " +
-//				"@font-face { " +
-//				"   font-family: 'Source Han Serif CN'; " +
-//				"   font-weight: bold; " +
-//				"   font-style: normal; " +
-//				"} " +
-				"body, html { " +
-						"   background-color: #FFFF00 !important; " +  // 设置背景色
-						"   font-family: 'Source Han Serif CN' !important; " +
-						"   line-height: 1.6 !important; " +
-						"   text-align: justify !important; " +
-//				"} ";
-//				+
-//				"h1, h2, h3 { " +
-//				"   font-family: 'Source Han Serif CN' !important; " +
-//				"   font-weight: bold !important; " +
-						"}";
+				"/* 全局重置与基础设置 */\n" +
+						"* {\n" +
+						"    margin: 0;\n" +
+						"    padding: 0;\n" +
+						"    box-sizing: border-box;\n" +
+						"}\n" +
+						"/* 主体样式 */\n" +
+						"body {\n" +
+						"    /* 字体大小（适配手机） */\n" +
+						"    font-size: 1em;\n" +
+						"    line-height: 1.6;\n" +
+						"\n" +
+						"    /* 多平台字体兼容 */\n" +
+						"    font-family:\n" +
+						"        'FZJinLs-L-GB';\n" +
+						"\n" +
+						"    /* 颜色与背景 */\n" +
+						"    color: #333;\n" +
+						"    background-color: #fff;\n" +
+						"    padding: 1rem;\n" +
+						"}\n" +
+						"\n" +
+						"/* 段落优化 */\n" +
+						"p {\n" +
+						"    font-size: 1em ;\n" +
+						"    line-height: 1.6;\n" +
+						"    margin-bottom: 1em;\n" +
+						"    text-align: justify;\n" +
+						"    hyphens: auto;\n" +
+						"}\n" +
+						"\n" +
+						"/* 标题层级 */\n" +
+						"h1 { font-size: 1.8em; }\n" +
+						"h2 { font-size: 1.5em; }\n" +
+						"h3 { font-size: 1.3em; }";
+		Context.setLog(new Context.Log() {
+			@Override
+			public void error(String message) {
+				Log.e("zzz", message);
+			}
+
+			@Override
+			public void warning(String message) {
+				Log.w("zzz", message);
+			}
+		});
 		Context.setUserCSS(userCSS);
+		Context.useDocumentCSS(true);
 		this.doc = doc;
 		doc.layout(layoutW, layoutH, layoutEM);
 		pageCount = doc.countPages();
